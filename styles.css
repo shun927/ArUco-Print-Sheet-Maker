@@ -1,0 +1,279 @@
+:root {
+  color-scheme: light;
+  --ink: #1c232b;
+  --muted: #66717f;
+  --line: #d8dee6;
+  --panel: #f6f8fa;
+  --accent: #007a78;
+  --danger: #b42318;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background: #eef2f5;
+  font-family: Arial, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+  height: 100vh;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  padding: 16px;
+  background: #ffffff;
+  border-right: 1px solid var(--line);
+}
+
+.brand h1 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.brand p,
+.status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.editor,
+.range-controls,
+.sheet-controls {
+  display: grid;
+  gap: 8px;
+}
+
+fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+legend {
+  padding: 0 5px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.two-up {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: #3b4652;
+}
+
+select,
+input {
+  min-height: 34px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 9px;
+  background: #ffffff;
+  color: var(--ink);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.check input {
+  width: 18px;
+  min-height: 18px;
+}
+
+button {
+  min-height: 34px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: #ffffff;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(0.94);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#print-sheet {
+  background: #26323f;
+}
+
+#clear-all {
+  color: var(--danger);
+  background: #fff7f6;
+  border-color: #ffd7d2;
+}
+
+.workspace {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+  overflow: hidden;
+  padding: 32px;
+}
+
+.sheet-frame {
+  width: var(--sheet-frame-width, var(--paper-width, 210mm));
+  height: var(--sheet-frame-height, var(--paper-height, 297mm));
+}
+
+.sheet {
+  display: flex;
+  align-content: flex-start;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--marker-gap, 6mm);
+  width: var(--paper-width, 210mm);
+  height: var(--paper-height, 297mm);
+  overflow: hidden;
+  padding: var(--page-margin, 10mm);
+  background: #ffffff;
+  box-shadow: 0 14px 36px rgba(24, 35, 48, 0.18);
+  transform: scale(var(--sheet-scale, 1));
+  transform-origin: top left;
+}
+
+.marker-card {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2mm;
+  break-inside: avoid;
+}
+
+.marker-art {
+  width: var(--marker-size);
+  height: var(--marker-size);
+}
+
+.marker-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.marker-label {
+  max-width: var(--marker-size);
+  color: #111111;
+  font-size: 9px;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.remove {
+  position: absolute;
+  top: -11px;
+  right: -11px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  background: #26323f;
+}
+
+@media (max-width: 860px) {
+  .app {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .controls {
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .workspace {
+    padding: 16px;
+  }
+}
+
+@media print {
+  @page {
+    size: var(--print-page-size, A4);
+    margin: 0;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .controls {
+    display: none;
+  }
+
+  .app {
+    display: block;
+  }
+
+  .workspace {
+    display: block;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .sheet-frame {
+    width: auto;
+    height: auto;
+  }
+
+  .sheet {
+    margin: 0;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .remove {
+    display: none;
+  }
+
+  .marker-card.hide-label .marker-label {
+    display: none;
+  }
+}

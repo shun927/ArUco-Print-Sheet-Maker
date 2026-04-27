@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ArUco Print Sheet Maker</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="controls" aria-label="マーカー設定">
+        <div class="brand">
+          <h1>ArUco Print Sheet Maker</h1>
+          <p>複数マーカーを1枚に配置して印刷します。</p>
+        </div>
+
+        <form id="marker-form" class="editor">
+          <fieldset>
+            <legend>マーカー</legend>
+            <label>
+              種類
+              <select id="dictionary"></select>
+            </label>
+            <div class="two-up">
+              <label>
+                ID
+                <input id="marker-id" type="number" min="0" value="0" />
+              </label>
+              <label>
+                サイズ(mm)
+                <input id="marker-size" type="number" min="5" max="200" step="1" value="40" />
+              </label>
+            </div>
+            <button type="submit">このIDを追加</button>
+          </fieldset>
+        </form>
+
+        <div class="range-controls">
+          <fieldset>
+            <legend>連番</legend>
+            <div class="two-up">
+              <label>
+                開始ID
+                <input id="range-start" type="number" min="0" value="0" />
+              </label>
+              <label>
+                個数
+                <input id="range-count" type="number" min="1" max="500" value="10" />
+              </label>
+            </div>
+            <button id="fill-range" type="button">連番を追加</button>
+          </fieldset>
+        </div>
+
+        <div class="sheet-controls">
+          <fieldset>
+            <legend>用紙</legend>
+            <label>
+              サイズ
+              <select id="paper-size">
+                <optgroup label="A判">
+                  <option value="a3">A3</option>
+                  <option value="a4" selected>A4</option>
+                  <option value="a5">A5</option>
+                  <option value="a6">A6</option>
+                </optgroup>
+                <optgroup label="B判(JIS)">
+                  <option value="b4">B4</option>
+                  <option value="b5">B5</option>
+                  <option value="b6">B6</option>
+                </optgroup>
+                <optgroup label="US">
+                  <option value="letter">Letter</option>
+                  <option value="legal">Legal</option>
+                  <option value="tabloid">Tabloid</option>
+                </optgroup>
+                <optgroup label="写真">
+                  <option value="postcard">はがき</option>
+                  <option value="l">L判</option>
+                  <option value="kg">KG</option>
+                  <option value="two-l">2L判</option>
+                </optgroup>
+              </select>
+            </label>
+            <div class="two-up">
+              <label>
+                余白(mm)
+                <input id="page-margin" type="number" min="0" max="40" value="10" />
+              </label>
+              <label>
+                間隔(mm)
+                <input id="marker-gap" type="number" min="0" max="30" value="6" />
+              </label>
+            </div>
+            <label class="check">
+              <input id="show-labels" type="checkbox" checked />
+              ラベルを表示
+            </label>
+          </fieldset>
+        </div>
+
+        <div class="actions">
+          <button id="print-sheet" type="button">印刷</button>
+          <button id="clear-all" type="button">全削除</button>
+        </div>
+
+        <p id="status" class="status" role="status"></p>
+      </section>
+
+      <section class="workspace" aria-label="印刷プレビュー">
+        <div id="sheet-frame" class="sheet-frame">
+          <div id="sheet" class="sheet"></div>
+        </div>
+      </section>
+    </main>
+
+    <template id="marker-template">
+      <article class="marker-card">
+        <button class="remove" type="button" aria-label="削除">×</button>
+        <div class="marker-art"></div>
+        <div class="marker-label"></div>
+      </article>
+    </template>
+
+    <script src="markers-data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
