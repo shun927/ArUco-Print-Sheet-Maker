@@ -31,6 +31,16 @@
                 <input id="marker-size" type="number" min="5" max="200" step="1" value="40" />
               </label>
             </div>
+            <div class="two-up">
+              <label>
+                白余白(mm)
+                <input id="quiet-zone" type="number" min="0" max="50" step="1" value="5" />
+              </label>
+              <label class="check">
+                <input id="show-borders" type="checkbox" />
+                枠線
+              </label>
+            </div>
             <button type="submit">このIDを追加</button>
           </fieldset>
         </form>
@@ -117,7 +127,9 @@
     <template id="marker-template">
       <article class="marker-card">
         <button class="remove" type="button" aria-label="削除">×</button>
-        <div class="marker-art"></div>
+        <div class="marker-box">
+          <div class="marker-art"></div>
+        </div>
         <div class="marker-label"></div>
       </article>
     </template>

@@ -3,6 +3,8 @@ const data = window.ARUCO_MARKER_DATA;
 const dictionaryInput = document.querySelector("#dictionary");
 const markerIdInput = document.querySelector("#marker-id");
 const markerSizeInput = document.querySelector("#marker-size");
+const quietZoneInput = document.querySelector("#quiet-zone");
+const showBordersInput = document.querySelector("#show-borders");
 const rangeStartInput = document.querySelector("#range-start");
 const rangeCountInput = document.querySelector("#range-count");
 const form = document.querySelector("#marker-form");
@@ -37,7 +39,7 @@ const paperSizes = {
 };
 
 const markers = [];
-const labelHeightMm = 8;
+const labelHeightMm = 10;
 const labelGapMm = 2;
 const previewPageGapPx = 18;
 
@@ -90,6 +92,8 @@ function addMarker(dictionaryKey, markerId, sizeMm) {
   const dictionary = data[dictionaryKey];
   const id = Number(markerId);
   const size = Number(sizeMm);
+  const quietZoneMm = Number(quietZoneInput.value);
+  const showBorder = showBordersInput.checked;
 
   if (!Number.isInteger(id) || id < 0 || id >= dictionary.count) {
     status.textContent = `この種類ではIDを 0 から ${dictionary.count - 1} の範囲で指定してください。`;
@@ -101,7 +105,12 @@ function addMarker(dictionaryKey, markerId, sizeMm) {
     return false;
   }
 
-  markers.push({ dictionaryKey, markerId: id, sizeMm: size });
+  if (!Number.isFinite(quietZoneMm) || quietZoneMm < 0 || quietZoneMm > 50) {
+    status.textContent = "白余白は 0mm から 50mm の範囲で指定してください。";
+    return false;
+  }
+
+  markers.push({ dictionaryKey, markerId: id, sizeMm: size, quietZoneMm, showBorder });
   render();
   return true;
 }
@@ -142,19 +151,27 @@ function createMarkerElement(marker, index, xMm, yMm, showLabels) {
     const label = fragment.querySelector(".marker-label");
     const remove = fragment.querySelector(".remove");
     const dictionary = data[marker.dictionaryKey];
+    const boxSize = markerBoxSize(marker);
 
     card.style.setProperty("--marker-size", `${marker.sizeMm}mm`);
+    card.style.setProperty("--quiet-zone", `${marker.quietZoneMm}mm`);
+    card.style.setProperty("--box-size", `${boxSize}mm`);
     card.style.left = `${xMm}mm`;
     card.style.top = `${yMm}mm`;
     card.classList.toggle("hide-label", !showLabels);
+    card.classList.toggle("show-border", marker.showBorder);
     art.innerHTML = markerSvg(marker.dictionaryKey, marker.markerId);
-    label.textContent = `${dictionary.label} / ID ${marker.markerId} / ${marker.sizeMm}mm`;
+    label.textContent = `${dictionary.label}\nID ${marker.markerId} / ${marker.sizeMm}mm`;
     label.hidden = !showLabels;
     remove.addEventListener("click", () => {
       markers.splice(index, 1);
       render();
     });
     return fragment;
+}
+
+function markerBoxSize(marker) {
+  return marker.sizeMm + marker.quietZoneMm * 2;
 }
 
 function paginateMarkers(showLabels) {
@@ -170,12 +187,13 @@ function paginateMarkers(showLabels) {
   let rowHeight = 0;
 
   markers.forEach((marker, index) => {
-    const itemWidth = marker.sizeMm;
-    const itemHeight = marker.sizeMm + (showLabels ? labelGapMm + labelHeightMm : 0);
+    const boxSize = markerBoxSize(marker);
+    const itemWidth = boxSize;
+    const itemHeight = boxSize + (showLabels ? labelGapMm + labelHeightMm : 0);
 
     if (itemWidth > contentWidth || itemHeight > contentHeight) {
       errors.push(
-        `ID ${marker.markerId} (${marker.sizeMm}mm) は現在の用紙と余白には収まりません。サイズか余白を小さくしてください。`
+        `ID ${marker.markerId} (${boxSize}mm) は現在の用紙と余白には収まりません。サイズか白余白か用紙余白を小さくしてください。`
       );
       return;
     }
@@ -237,6 +255,8 @@ function addRange() {
   const dictionary = data[dictionaryKey];
   const start = Number(rangeStartInput.value);
   const size = Number(markerSizeInput.value);
+  const quietZoneMm = Number(quietZoneInput.value);
+  const showBorder = showBordersInput.checked;
   const count = Number(rangeCountInput.value);
 
   if (!Number.isInteger(start) || start < 0 || start >= dictionary.count) {
@@ -254,9 +274,14 @@ function addRange() {
     return;
   }
 
+  if (!Number.isFinite(quietZoneMm) || quietZoneMm < 0 || quietZoneMm > 50) {
+    status.textContent = "白余白は 0mm から 50mm の範囲で指定してください。";
+    return;
+  }
+
   const end = Math.min(dictionary.count - 1, start + count - 1);
   for (let id = start; id <= end; id += 1) {
-    markers.push({ dictionaryKey, markerId: id, sizeMm: size });
+    markers.push({ dictionaryKey, markerId: id, sizeMm: size, quietZoneMm, showBorder });
   }
   render();
   status.textContent = `${start} から ${end} まで追加しました。${pagesElement.children.length}ページに配置中です。`;

@@ -183,12 +183,26 @@ button:hover {
   display: grid;
   justify-items: center;
   gap: 2mm;
+  width: var(--box-size);
   break-inside: avoid;
 }
 
+.marker-box {
+  display: grid;
+  place-items: center;
+  width: var(--box-size);
+  height: var(--box-size);
+  padding: var(--quiet-zone);
+  background: #ffffff;
+}
+
+.marker-card.show-border .marker-box {
+  border: 0.2mm solid #111111;
+}
+
 .marker-art {
-  width: var(--marker-size);
-  height: var(--marker-size);
+  width: 100%;
+  height: 100%;
 }
 
 .marker-art svg {
@@ -198,12 +212,14 @@ button:hover {
 }
 
 .marker-label {
-  max-width: var(--marker-size);
+  width: var(--box-size);
+  min-height: 10mm;
   color: #111111;
-  font-size: 9px;
+  font-size: 8px;
   line-height: 1.25;
   text-align: center;
   overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 
 .remove {
