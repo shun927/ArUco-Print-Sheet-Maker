@@ -8,7 +8,7 @@ const rangeCountInput = document.querySelector("#range-count");
 const form = document.querySelector("#marker-form");
 const workspace = document.querySelector(".workspace");
 const sheetFrame = document.querySelector("#sheet-frame");
-const sheet = document.querySelector("#sheet");
+const pagesElement = document.querySelector("#pages");
 const template = document.querySelector("#marker-template");
 const paperSizeInput = document.querySelector("#paper-size");
 const pageMarginInput = document.querySelector("#page-margin");
@@ -37,6 +37,9 @@ const paperSizes = {
 };
 
 const markers = [];
+const labelHeightMm = 8;
+const labelGapMm = 2;
+const previewPageGapPx = 18;
 
 function setupDictionaries() {
   Object.entries(data).forEach(([key, dictionary]) => {
@@ -104,10 +107,35 @@ function addMarker(dictionaryKey, markerId, sizeMm) {
 }
 
 function render() {
-  sheet.replaceChildren();
+  pagesElement.replaceChildren();
   const showLabels = showLabelsInput.checked;
+  const layout = paginateMarkers(showLabels);
 
-  markers.forEach((marker, index) => {
+  layout.pages.forEach((pageMarkers, pageIndex) => {
+    const page = document.createElement("div");
+    page.className = "sheet";
+    page.setAttribute("aria-label", `${pageIndex + 1}ページ`);
+
+    pageMarkers.forEach((entry) => {
+      page.append(createMarkerElement(entry.marker, entry.index, entry.x, entry.y, showLabels));
+    });
+
+    pagesElement.append(page);
+  });
+
+  updateSheet();
+  fitSheetToWorkspace(layout.pages.length);
+
+  if (layout.errors.length) {
+    status.textContent = layout.errors[0];
+  } else if (markers.length) {
+    status.textContent = `${markers.length}個のマーカーを${layout.pages.length}ページに配置中です。`;
+  } else {
+    status.textContent = "マーカーを追加してください。";
+  }
+}
+
+function createMarkerElement(marker, index, xMm, yMm, showLabels) {
     const fragment = template.content.cloneNode(true);
     const card = fragment.querySelector(".marker-card");
     const art = fragment.querySelector(".marker-art");
@@ -116,6 +144,8 @@ function render() {
     const dictionary = data[marker.dictionaryKey];
 
     card.style.setProperty("--marker-size", `${marker.sizeMm}mm`);
+    card.style.left = `${xMm}mm`;
+    card.style.top = `${yMm}mm`;
     card.classList.toggle("hide-label", !showLabels);
     art.innerHTML = markerSvg(marker.dictionaryKey, marker.markerId);
     label.textContent = `${dictionary.label} / ID ${marker.markerId} / ${marker.sizeMm}mm`;
@@ -124,14 +154,51 @@ function render() {
       markers.splice(index, 1);
       render();
     });
-    sheet.append(fragment);
+    return fragment;
+}
+
+function paginateMarkers(showLabels) {
+  const paper = paperSizes[paperSizeInput.value];
+  const margin = Number(pageMarginInput.value);
+  const gap = Number(markerGapInput.value);
+  const contentWidth = paper.width - margin * 2;
+  const contentHeight = paper.height - margin * 2;
+  const pages = [[]];
+  const errors = [];
+  let x = margin;
+  let y = margin;
+  let rowHeight = 0;
+
+  markers.forEach((marker, index) => {
+    const itemWidth = marker.sizeMm;
+    const itemHeight = marker.sizeMm + (showLabels ? labelGapMm + labelHeightMm : 0);
+
+    if (itemWidth > contentWidth || itemHeight > contentHeight) {
+      errors.push(
+        `ID ${marker.markerId} (${marker.sizeMm}mm) は現在の用紙と余白には収まりません。サイズか余白を小さくしてください。`
+      );
+      return;
+    }
+
+    if (x > margin && x + itemWidth > margin + contentWidth) {
+      x = margin;
+      y += rowHeight + gap;
+      rowHeight = 0;
+    }
+
+    if (y > margin && y + itemHeight > margin + contentHeight) {
+      pages.push([]);
+      x = margin;
+      y = margin;
+      rowHeight = 0;
+    }
+
+    pages[pages.length - 1].push({ marker, index, x, y });
+    x += itemWidth + gap;
+    rowHeight = Math.max(rowHeight, itemHeight);
   });
 
-  updateSheet();
-  fitSheetToWorkspace();
-  status.textContent = markers.length
-    ? `${markers.length}個のマーカーを配置中です。`
-    : "マーカーを追加してください。";
+  return { pages: pages.filter((page) => page.length > 0 || !markers.length), errors };
 }
 
 function updateSheet() {
@@ -139,28 +206,28 @@ function updateSheet() {
   const margin = Number(pageMarginInput.value);
   const gap = Number(markerGapInput.value);
 
-  sheet.style.setProperty("--paper-width", `${paper.width}mm`);
-  sheet.style.setProperty("--paper-height", `${paper.height}mm`);
+  pagesElement.style.setProperty("--paper-width", `${paper.width}mm`);
+  pagesElement.style.setProperty("--paper-height", `${paper.height}mm`);
   sheetFrame.style.setProperty("--paper-width", `${paper.width}mm`);
   sheetFrame.style.setProperty("--paper-height", `${paper.height}mm`);
-  sheet.style.setProperty("--page-margin", `${margin}mm`);
-  sheet.style.setProperty("--marker-gap", `${gap}mm`);
   document.documentElement.style.setProperty(
     "--print-page-size",
     `${paper.width}mm ${paper.height}mm`
   );
 }
 
-function fitSheetToWorkspace() {
+function fitSheetToWorkspace(pageCount = pagesElement.children.length || 1) {
   requestAnimationFrame(() => {
     const availableWidth = Math.max(1, workspace.clientWidth - 64);
     const availableHeight = Math.max(1, workspace.clientHeight - 64);
-    const sheetWidth = sheet.offsetWidth;
-    const sheetHeight = sheet.offsetHeight;
+    const firstPage = pagesElement.querySelector(".sheet");
+    const sheetWidth = firstPage ? firstPage.offsetWidth : 1;
+    const sheetHeight = firstPage ? firstPage.offsetHeight : 1;
+    const totalWidth = sheetWidth * pageCount + previewPageGapPx * Math.max(0, pageCount - 1);
     const scale = Math.min(1, availableWidth / sheetWidth, availableHeight / sheetHeight);
 
-    sheet.style.setProperty("--sheet-scale", scale.toFixed(4));
-    sheetFrame.style.setProperty("--sheet-frame-width", `${sheetWidth * scale}px`);
+    pagesElement.style.setProperty("--sheet-scale", scale.toFixed(4));
+    sheetFrame.style.setProperty("--sheet-frame-width", `${totalWidth * scale}px`);
     sheetFrame.style.setProperty("--sheet-frame-height", `${sheetHeight * scale}px`);
   });
 }
@@ -182,11 +249,17 @@ function addRange() {
     return;
   }
 
+  if (!Number.isFinite(size) || size < 5 || size > 200) {
+    status.textContent = "サイズは 5mm から 200mm の範囲で指定してください。";
+    return;
+  }
+
   const end = Math.min(dictionary.count - 1, start + count - 1);
   for (let id = start; id <= end; id += 1) {
-    addMarker(dictionaryKey, id, size);
+    markers.push({ dictionaryKey, markerId: id, sizeMm: size });
   }
-  status.textContent = `${start} から ${end} まで追加しました。`;
+  render();
+  status.textContent = `${start} から ${end} まで追加しました。${pagesElement.children.length}ページに配置中です。`;
 }
 
 dictionaryInput.addEventListener("change", updateIdLimit);
