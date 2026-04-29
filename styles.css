@@ -63,6 +63,41 @@ select {
   gap: 8px;
 }
 
+.mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f4f7f9;
+}
+
+.mode-tabs label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.mode-tabs input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mode-tabs label:has(input:checked) {
+  color: #ffffff;
+  background: var(--accent);
+}
+
+[hidden] {
+  display: none !important;
+}
+
 fieldset {
   display: grid;
   gap: 8px;
@@ -183,15 +218,15 @@ button:hover {
   display: grid;
   justify-items: center;
   gap: 2mm;
-  width: var(--box-size);
+  width: var(--box-width);
   break-inside: avoid;
 }
 
 .marker-box {
   display: grid;
   place-items: center;
-  width: var(--box-size);
-  height: var(--box-size);
+  width: var(--box-width);
+  height: var(--box-height);
   padding: var(--quiet-zone);
   background: #ffffff;
 }
@@ -212,7 +247,7 @@ button:hover {
 }
 
 .marker-label {
-  width: var(--box-size);
+  width: var(--box-width);
   min-height: 10mm;
   color: #111111;
   font-size: 8px;
@@ -250,6 +285,44 @@ button:hover {
 
   .workspace {
     padding: 16px;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 861px) {
+  .controls {
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .brand h1 {
+    margin: 0;
+    font-size: 15px;
+  }
+
+  .brand p {
+    display: none;
+  }
+
+  fieldset {
+    gap: 5px;
+    padding: 7px;
+  }
+
+  legend,
+  label,
+  .status {
+    font-size: 11px;
+  }
+
+  select,
+  input,
+  button {
+    min-height: 28px;
+    padding: 4px 7px;
+  }
+
+  .mode-tabs label {
+    min-height: 26px;
   }
 }
 

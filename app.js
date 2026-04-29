@@ -5,9 +5,19 @@ const markerIdInput = document.querySelector("#marker-id");
 const markerSizeInput = document.querySelector("#marker-size");
 const quietZoneInput = document.querySelector("#quiet-zone");
 const showBordersInput = document.querySelector("#show-borders");
+const checkerboardForm = document.querySelector("#checkerboard-form");
+const checkerColsInput = document.querySelector("#checker-cols");
+const checkerRowsInput = document.querySelector("#checker-rows");
+const checkerCellSizeInput = document.querySelector("#checker-cell-size");
+const checkerQuietZoneInput = document.querySelector("#checker-quiet-zone");
+const checkerStartBlackInput = document.querySelector("#checker-start-black");
+const checkerBorderInput = document.querySelector("#checker-border");
 const rangeStartInput = document.querySelector("#range-start");
 const rangeCountInput = document.querySelector("#range-count");
 const form = document.querySelector("#marker-form");
+const markerForm = document.querySelector("#marker-form");
+const rangeControls = document.querySelector(".range-controls");
+const modeInputs = document.querySelectorAll('input[name="pattern-mode"]');
 const workspace = document.querySelector(".workspace");
 const sheetFrame = document.querySelector("#sheet-frame");
 const pagesElement = document.querySelector("#pages");
@@ -88,6 +98,25 @@ function markerSvg(dictionaryKey, markerId) {
   `;
 }
 
+function checkerboardSvg(cols, rows, startBlack) {
+  const rects = [];
+  for (let y = 0; y < rows; y += 1) {
+    for (let x = 0; x < cols; x += 1) {
+      const isBlack = (x + y) % 2 === (startBlack ? 0 : 1);
+      if (isBlack) {
+        rects.push(`<rect x="${x}" y="${y}" width="1" height="1"/>`);
+      }
+    }
+  }
+
+  return `
+    <svg viewBox="0 0 ${cols} ${rows}" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+      <rect width="${cols}" height="${rows}" fill="#fff"/>
+      <g fill="#000">${rects.join("")}</g>
+    </svg>
+  `;
+}
+
 function addMarker(dictionaryKey, markerId, sizeMm) {
   const dictionary = data[dictionaryKey];
   const id = Number(markerId);
@@ -115,6 +144,47 @@ function addMarker(dictionaryKey, markerId, sizeMm) {
   return true;
 }
 
+function addCheckerboard() {
+  const cols = Number(checkerColsInput.value);
+  const rows = Number(checkerRowsInput.value);
+  const cellSizeMm = Number(checkerCellSizeInput.value);
+  const quietZoneMm = Number(checkerQuietZoneInput.value);
+  const startBlack = checkerStartBlackInput.checked;
+  const showBorder = checkerBorderInput.checked;
+
+  if (!Number.isInteger(cols) || cols < 2 || cols > 80) {
+    status.textContent = "横マスは 2 から 80 の範囲で指定してください。";
+    return false;
+  }
+
+  if (!Number.isInteger(rows) || rows < 2 || rows > 80) {
+    status.textContent = "縦マスは 2 から 80 の範囲で指定してください。";
+    return false;
+  }
+
+  if (!Number.isFinite(cellSizeMm) || cellSizeMm < 2 || cellSizeMm > 100) {
+    status.textContent = "1マスのサイズは 2mm から 100mm の範囲で指定してください。";
+    return false;
+  }
+
+  if (!Number.isFinite(quietZoneMm) || quietZoneMm < 0 || quietZoneMm > 80) {
+    status.textContent = "白余白は 0mm から 80mm の範囲で指定してください。";
+    return false;
+  }
+
+  markers.push({
+    type: "checkerboard",
+    cols,
+    rows,
+    cellSizeMm,
+    quietZoneMm,
+    startBlack,
+    showBorder,
+  });
+  render();
+  return true;
+}
+
 function render() {
   pagesElement.replaceChildren();
   const showLabels = showLabelsInput.checked;
@@ -138,9 +208,9 @@ function render() {
   if (layout.errors.length) {
     status.textContent = layout.errors[0];
   } else if (markers.length) {
-    status.textContent = `${markers.length}個のマーカーを${layout.pages.length}ページに配置中です。`;
+    status.textContent = `${markers.length}個のアイテムを${layout.pages.length}ページに配置中です。`;
   } else {
-    status.textContent = "マーカーを追加してください。";
+    status.textContent = "アイテムを追加してください。";
   }
 }
 
@@ -150,18 +220,24 @@ function createMarkerElement(marker, index, xMm, yMm, showLabels) {
     const art = fragment.querySelector(".marker-art");
     const label = fragment.querySelector(".marker-label");
     const remove = fragment.querySelector(".remove");
-    const dictionary = data[marker.dictionaryKey];
-    const boxSize = markerBoxSize(marker);
+    const box = itemBoxSize(marker);
+    const isCheckerboard = marker.type === "checkerboard";
 
-    card.style.setProperty("--marker-size", `${marker.sizeMm}mm`);
     card.style.setProperty("--quiet-zone", `${marker.quietZoneMm}mm`);
-    card.style.setProperty("--box-size", `${boxSize}mm`);
+    card.style.setProperty("--box-width", `${box.width}mm`);
+    card.style.setProperty("--box-height", `${box.height}mm`);
     card.style.left = `${xMm}mm`;
     card.style.top = `${yMm}mm`;
     card.classList.toggle("hide-label", !showLabels);
     card.classList.toggle("show-border", marker.showBorder);
-    art.innerHTML = markerSvg(marker.dictionaryKey, marker.markerId);
-    label.textContent = `${dictionary.label}\nID ${marker.markerId} / ${marker.sizeMm}mm`;
+    if (isCheckerboard) {
+      art.innerHTML = checkerboardSvg(marker.cols, marker.rows, marker.startBlack);
+      label.textContent = `チェッカー ${marker.cols}x${marker.rows}\n1マス ${marker.cellSizeMm}mm`;
+    } else {
+      const dictionary = data[marker.dictionaryKey];
+      art.innerHTML = markerSvg(marker.dictionaryKey, marker.markerId);
+      label.textContent = `${dictionary.label}\nID ${marker.markerId} / ${marker.sizeMm}mm`;
+    }
     label.hidden = !showLabels;
     remove.addEventListener("click", () => {
       markers.splice(index, 1);
@@ -170,8 +246,16 @@ function createMarkerElement(marker, index, xMm, yMm, showLabels) {
     return fragment;
 }
 
-function markerBoxSize(marker) {
-  return marker.sizeMm + marker.quietZoneMm * 2;
+function itemBoxSize(marker) {
+  if (marker.type === "checkerboard") {
+    return {
+      width: marker.cols * marker.cellSizeMm + marker.quietZoneMm * 2,
+      height: marker.rows * marker.cellSizeMm + marker.quietZoneMm * 2,
+    };
+  }
+
+  const size = marker.sizeMm + marker.quietZoneMm * 2;
+  return { width: size, height: size };
 }
 
 function paginateMarkers(showLabels) {
@@ -187,13 +271,13 @@ function paginateMarkers(showLabels) {
   let rowHeight = 0;
 
   markers.forEach((marker, index) => {
-    const boxSize = markerBoxSize(marker);
-    const itemWidth = boxSize;
-    const itemHeight = boxSize + (showLabels ? labelGapMm + labelHeightMm : 0);
+    const box = itemBoxSize(marker);
+    const itemWidth = box.width;
+    const itemHeight = box.height + (showLabels ? labelGapMm + labelHeightMm : 0);
 
     if (itemWidth > contentWidth || itemHeight > contentHeight) {
       errors.push(
-        `ID ${marker.markerId} (${boxSize}mm) は現在の用紙と余白には収まりません。サイズか白余白か用紙余白を小さくしてください。`
+        `${itemName(marker)} (${itemWidth}x${itemHeight}mm) は現在の用紙と余白には収まりません。サイズか白余白か用紙余白を小さくしてください。`
       );
       return;
     }
@@ -217,6 +301,13 @@ function paginateMarkers(showLabels) {
   });
 
   return { pages: pages.filter((page) => page.length > 0 || !markers.length), errors };
+}
+
+function itemName(marker) {
+  if (marker.type === "checkerboard") {
+    return `Checkerboard ${marker.cols}x${marker.rows}`;
+  }
+  return `ID ${marker.markerId}`;
 }
 
 function updateSheet() {
@@ -294,6 +385,19 @@ markerIdInput.addEventListener("input", () => {
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   addMarker(dictionaryInput.value, markerIdInput.value, markerSizeInput.value);
+});
+checkerboardForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  addCheckerboard();
+});
+
+modeInputs.forEach((input) => {
+  input.addEventListener("change", () => {
+    const isCheckerboard = input.value === "checkerboard" && input.checked;
+    markerForm.hidden = isCheckerboard;
+    rangeControls.hidden = isCheckerboard;
+    checkerboardForm.hidden = !isCheckerboard;
+  });
 });
 
 [paperSizeInput, pageMarginInput, markerGapInput, showLabelsInput].forEach((input) => {

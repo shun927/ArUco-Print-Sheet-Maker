@@ -11,10 +11,21 @@
       <section class="controls" aria-label="マーカー設定">
         <div class="brand">
           <h1>ArUco Print Sheet Maker</h1>
-          <p>複数マーカーを1枚に配置して印刷します。</p>
+          <p>マーカーやキャリブレーションボードを印刷用に配置します。</p>
         </div>
 
-        <form id="marker-form" class="editor">
+        <div class="mode-tabs" role="tablist" aria-label="生成タイプ">
+          <label>
+            <input type="radio" name="pattern-mode" value="marker" checked />
+            ArUco
+          </label>
+          <label>
+            <input type="radio" name="pattern-mode" value="checkerboard" />
+            チェッカー
+          </label>
+        </div>
+
+        <form id="marker-form" class="editor pattern-panel">
           <fieldset>
             <legend>マーカー</legend>
             <label>
@@ -45,7 +56,44 @@
           </fieldset>
         </form>
 
-        <div class="range-controls">
+        <form id="checkerboard-form" class="editor pattern-panel" hidden>
+          <fieldset>
+            <legend>チェッカーボード</legend>
+            <div class="two-up">
+              <label>
+                横マス
+                <input id="checker-cols" type="number" min="2" max="80" value="9" />
+              </label>
+              <label>
+                縦マス
+                <input id="checker-rows" type="number" min="2" max="80" value="6" />
+              </label>
+            </div>
+            <div class="two-up">
+              <label>
+                1マス(mm)
+                <input id="checker-cell-size" type="number" min="2" max="100" step="1" value="18" />
+              </label>
+              <label>
+                白余白(mm)
+                <input id="checker-quiet-zone" type="number" min="0" max="80" step="1" value="10" />
+              </label>
+            </div>
+            <div class="two-up">
+              <label class="check">
+                <input id="checker-start-black" type="checkbox" checked />
+                左上黒
+              </label>
+              <label class="check">
+                <input id="checker-border" type="checkbox" checked />
+                枠線
+              </label>
+            </div>
+            <button type="submit">ボードを追加</button>
+          </fieldset>
+        </form>
+
+        <div class="range-controls pattern-panel">
           <fieldset>
             <legend>連番</legend>
             <div class="two-up">
@@ -124,7 +172,7 @@
       </section>
     </main>
 
-    <template id="marker-template">
+        <template id="marker-template">
       <article class="marker-card">
         <button class="remove" type="button" aria-label="削除">×</button>
         <div class="marker-box">
